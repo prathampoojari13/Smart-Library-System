@@ -2,7 +2,7 @@ import axios from "axios";
 
 const getApiBaseUrl = () => {
     if (import.meta.env.VITE_API_BASE_URL) {
-        return import.meta.env.VITE_API_BASE_URL;
+        return import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, "");
     }
     if (typeof window !== "undefined" && window.location) {
         const hostname = window.location.hostname;

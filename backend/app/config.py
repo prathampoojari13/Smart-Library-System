@@ -18,12 +18,13 @@ from functools import lru_cache
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Explicitly load backend/.env relative to this config file
+# Explicitly load backend/.env relative to this config file (override=False to prioritize cloud env vars)
 _env_path = Path(__file__).resolve().parent.parent / ".env"
 if _env_path.exists():
-    load_dotenv(dotenv_path=_env_path, override=True)
+    load_dotenv(dotenv_path=_env_path, override=False)
 else:
-    load_dotenv()
+    load_dotenv(override=False)
+
 
 
 def _get_env(key: str, default: str | None = None, required: bool = False) -> str:
@@ -58,7 +59,7 @@ class Settings:
     DEBUG: bool = _get_env("DEBUG", "False").lower() in ("1", "true", "yes")
 
     # --- MySQL database credentials / connection URL ---
-    DATABASE_URL_ENV: str | None = os.getenv("DATABASE_URL", None)
+    DATABASE_URL_ENV: str | None = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
     DB_HOST: str = _get_env("DB_HOST", "localhost")
     DB_PORT: int = int(_get_env("DB_PORT", "3306"))
     DB_USER: str = _get_env("DB_USER", "root")
@@ -95,10 +96,10 @@ class Settings:
         Build the SQLAlchemy connection string for MySQL using the
         PyMySQL driver.
 
-        If DATABASE_URL environment variable is provided directly (e.g. in cloud/Docker),
+        If DATABASE_URL or MYSQL_URL environment variable is provided directly (e.g. in cloud/Docker),
         use it, ensuring it uses the mysql+pymysql driver prefix.
         """
-        if self.DATABASE_URL_ENV:
+        if self.DATABASE_URL_ENV and self.DATABASE_URL_ENV.strip():
             url = self.DATABASE_URL_ENV.strip()
             if url.startswith("mysql://"):
                 url = url.replace("mysql://", "mysql+pymysql://", 1)
