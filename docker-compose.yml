@@ -1,0 +1,70 @@
+services:
+  # ----------------------------------------------------------------------------
+  # 1. MySQL Database Service
+  # ----------------------------------------------------------------------------
+  db:
+    image: mysql:8.0
+    container_name: smart_library_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: smart_library
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # 2. FastAPI Backend Service
+  # ----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart_library_backend
+    restart: unless-stopped
+    environment:
+      - APP_ENV=production
+      - DEBUG=False
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=smart_library
+      - SECRET_KEY=smart_library_production_jwt_secret_key_change_me_32bytes
+      - ACCESS_TOKEN_EXPIRE_MINUTES=120
+      - LOAN_PERIOD_DAYS=14
+      - DAILY_OVERDUE_FINE=5.0
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:80,http://localhost
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 3. React Frontend Service (Served via Nginx)
+  # ----------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    container_name: smart_library_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+    driver: local
