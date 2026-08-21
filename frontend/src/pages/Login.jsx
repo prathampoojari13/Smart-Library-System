@@ -28,13 +28,16 @@ function Login() {
         setError("");
 
         try {
+            console.log("[LOGIN INITIATED] Submitting login request for:", email.trim());
             const response = await api.post("/users/login", {
                 email: email.trim(),
                 password: password
             });
 
+            console.log("[LOGIN SUCCESS] Response received (HTTP " + response.status + "):", response.data);
             const token = response.data.access_token;
             if (!token) {
+                console.error("[LOGIN ERROR] Access token missing from response payload:", response.data);
                 setError("Authentication failed: Security access token was not returned.");
                 return;
             }
@@ -46,14 +49,36 @@ function Login() {
             localStorage.setItem("name", response.data.name);
             localStorage.setItem("email", response.data.email);
 
+            console.log("[LOGIN SESSION STORED] JWT and user profile saved to localStorage:", {
+                tokenSaved: Boolean(localStorage.getItem("token")),
+                user_id: response.data.user_id,
+                role: response.data.role,
+                name: response.data.name,
+                email: response.data.email,
+            });
+
             navigate("/dashboard", { replace: true });
         } catch (err) {
-            console.error("LOGIN ERROR:", err);
-            setError(
-                err.response?.data?.detail ||
-                err.response?.data?.message ||
-                "Invalid credentials. Please verify your university email and password."
-            );
+            console.error("[LOGIN FAILED]", {
+                message: err.message,
+                status: err.response?.status,
+                data: err.response?.data,
+                configUrl: (err.config?.baseURL || "") + (err.config?.url || ""),
+            });
+
+            if (err.response?.data?.detail) {
+                setError(err.response.data.detail);
+            } else if (err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else if (!err.response) {
+                const targetUrl = (err.config?.baseURL || "").replace(/\/+$/, "");
+                setError(
+                    `Cannot connect to backend API at ${targetUrl || "server"}. ` +
+                    "Please verify that the backend is awake (Render spins down inactive instances) and CORS is configured."
+                );
+            } else {
+                setError("Login failed (HTTP " + err.response.status + "). Please check your credentials.");
+            }
         } finally {
             setLoading(false);
         }
