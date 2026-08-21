@@ -58,8 +58,8 @@ class Settings:
     APP_ENV: str = _get_env("APP_ENV", "development")
     DEBUG: bool = _get_env("DEBUG", "False").lower() in ("1", "true", "yes")
 
-    # --- MySQL database credentials / connection URL ---
-    DATABASE_URL_ENV: str | None = os.getenv("DATABASE_URL") or os.getenv("MYSQL_URL")
+    # --- Database credentials / connection URL ---
+    DATABASE_URL_ENV: str | None = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL") or os.getenv("MYSQL_URL")
     DB_HOST: str = _get_env("DB_HOST", "localhost")
     DB_PORT: int = int(_get_env("DB_PORT", "3306"))
     DB_USER: str = _get_env("DB_USER", "root")
@@ -93,15 +93,21 @@ class Settings:
     @property
     def DATABASE_URL(self) -> str:
         """
-        Build the SQLAlchemy connection string for MySQL using the
-        PyMySQL driver.
+        Build the SQLAlchemy connection string.
 
-        If DATABASE_URL or MYSQL_URL environment variable is provided directly (e.g. in cloud/Docker),
-        use it, ensuring it uses the mysql+pymysql driver prefix.
+        Supports:
+        - Neon PostgreSQL / standard PostgreSQL via DATABASE_URL or POSTGRES_URL
+          (converts `postgresql://` or `postgres://` to `postgresql+psycopg2://`).
+        - MySQL via DATABASE_URL or MYSQL_URL (converts `mysql://` to `mysql+pymysql://`).
+        - Local MySQL credentials fallback using DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME.
         """
         if self.DATABASE_URL_ENV and self.DATABASE_URL_ENV.strip():
             url = self.DATABASE_URL_ENV.strip()
-            if url.startswith("mysql://"):
+            if url.startswith("postgres://"):
+                url = url.replace("postgres://", "postgresql+psycopg2://", 1)
+            elif url.startswith("postgresql://"):
+                url = url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            elif url.startswith("mysql://"):
                 url = url.replace("mysql://", "mysql+pymysql://", 1)
             return url
 
