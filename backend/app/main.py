@@ -23,6 +23,8 @@ from app.database import check_db_connection
 from app.database import engine, Base
 from app import models
 
+from app.utils.seed import seed_initial_books
+
 from app.routes.users import router as user_router
 from app.routes.book import router as book_router
 from app.routes.borrow import router as borrow_router
@@ -57,9 +59,12 @@ async def lifespan(app: FastAPI):
         logger.info("Database connection established successfully.")
         try:
             Base.metadata.create_all(bind=engine)
-            logger.info("Database tables initialized successfully.")
+            logger.info("Database initialized successfully")
+
+            # Idempotently seed initial library catalog if empty
+            seed_initial_books()
         except Exception as e:
-            logger.error("Error creating database tables: %s", e)
+            logger.error("Error initializing database / seeding catalog: %s", e)
     else:
         logger.warning(
             "Database connection could not be verified."
