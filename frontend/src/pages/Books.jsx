@@ -146,6 +146,17 @@ function Books() {
             });
 
             success(`"${book.title}" borrowed successfully! Due on ${res.data.due_date || "14 days"}.`);
+            
+            // Immediate state update so displayed available quantity decreases instantly
+            setBooks((prevBooks) =>
+                prevBooks.map((b) =>
+                    b.book_id === book.book_id
+                        ? { ...b, available_quantity: Math.max(0, (b.available_quantity ?? 1) - 1) }
+                        : b
+                )
+            );
+
+            // Re-fetch books from backend to guarantee synchronization
             await fetchBooks();
         } catch (err) {
             console.error("BORROW ERROR:", err);
@@ -395,15 +406,21 @@ function Books() {
                                         by {book.author || "Unknown Author"}
                                     </p>
 
-                                    {/* Location Tag */}
-                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                                        <div className="flex items-center gap-1.5">
+                                    {/* Location & Quantity Metadata */}
+                                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                                        <div className="flex items-center gap-1.5 min-w-0">
                                             <MapPin size={14} className="text-indigo-500 shrink-0" />
-                                            <span>{book.rack_location || "Main Stacks"}</span>
+                                            <span className="truncate max-w-[110px]">{book.rack_location || "Main Stacks"}</span>
                                         </div>
-                                        <span className="font-mono text-[11px] text-slate-400">
-                                            Total: {book.total_quantity || 1}
-                                        </span>
+                                        <div className="flex items-center gap-2 text-[11px] shrink-0 font-medium">
+                                            <span className="text-slate-500">
+                                                Total: <strong className="text-slate-800 font-semibold">{book.total_quantity ?? 0}</strong>
+                                            </span>
+                                            <span className="text-slate-300 font-normal">|</span>
+                                            <span className={(book.available_quantity || 0) > 0 ? "text-emerald-700 font-semibold" : "text-rose-600 font-semibold"}>
+                                                Available: <strong>{book.available_quantity ?? 0}</strong>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -412,8 +429,8 @@ function Books() {
                                     {isAvailable ? (
                                         <button
                                             onClick={() => handleBorrow(book)}
-                                            disabled={isProcessing}
-                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition duration-150 active:scale-[0.99] disabled:opacity-60 cursor-pointer"
+                                            disabled={!isAvailable || isProcessing}
+                                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition duration-150 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                                         >
                                             {isProcessing ? "Processing..." : (
                                                 <>
