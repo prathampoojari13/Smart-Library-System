@@ -78,17 +78,56 @@ class Settings:
     # --- CORS settings ---
     CORS_ORIGINS: str = _get_env(
         "CORS_ORIGINS",
-        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5174,http://127.0.0.1:5174,http://localhost:8000,http://127.0.0.1:8000,http://localhost:80,http://localhost"
+        "https://smart-library-system-3rby.onrender.com,"
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "http://localhost:3000,"
+        "http://127.0.0.1:3000,"
+        "http://localhost:5174,"
+        "http://127.0.0.1:5174,"
+        "http://localhost:8000,"
+        "http://127.0.0.1:8000,"
+        "http://localhost:80,"
+        "http://localhost"
     )
 
     @property
     def CORS_ORIGINS_LIST(self) -> list[str]:
         """
-        Parse comma-separated CORS_ORIGINS into a list of origins.
+        Parse comma-separated or newline-separated CORS_ORIGINS into a sanitized list of origins.
+        Ensures production Render frontend and local development origins are included and valid.
         """
-        if self.CORS_ORIGINS.strip() == "*":
-            return ["*"]
-        return [origin.strip().rstrip("/") for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
+        origins: list[str] = []
+        raw = os.getenv("CORS_ORIGINS") or self.CORS_ORIGINS
+        if raw:
+            for item in raw.replace("\n", ",").split(","):
+                cleaned = item.strip().strip("'\"").rstrip("/")
+                if cleaned and cleaned != "*" and cleaned not in origins:
+                    origins.append(cleaned)
+
+        # Always guarantee production frontend origin is present
+        prod_origin = "https://smart-library-system-3rby.onrender.com"
+        if prod_origin not in origins:
+            origins.append(prod_origin)
+
+        # Always guarantee localhost origins for local development
+        dev_origins = [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://localhost:5174",
+            "http://127.0.0.1:5174",
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:80",
+            "http://localhost",
+        ]
+        for dev in dev_origins:
+            if dev not in origins:
+                origins.append(dev)
+
+        return origins
 
     @property
     def DATABASE_URL(self) -> str:
