@@ -491,22 +491,6 @@ Smart-Library-System/
 
 ---
 
-## 📸 Screenshots
-
-*(Visual documentation placeholders for project presentations and portfolio showcases)*
-
-| Page / Interface | Description | Placeholder |
-| :--- | :--- | :--- |
-| **Authentication** | User Login & Registration with JWT token generation | *[ Screenshot: Login / Registration View ]* |
-| **Student Dashboard** | Member summary with active checkouts and overdue alerts | *[ Screenshot: Student Dashboard ]* |
-| **Book Catalog** | Catalog search with real-time availability and multi-filtering | *[ Screenshot: Book Catalog View ]* |
-| **Borrowing & Circulation** | Active student loans with 14-day return deadlines | *[ Screenshot: Borrowing Records View ]* |
-| **Reservation Queue** | Hold management for out-of-stock publications | *[ Screenshot: Reservations View ]* |
-| **Fine Settlement** | Fine balance summary and fee payment confirmation | *[ Screenshot: Fines Management View ]* |
-| **Admin Dashboard** | Institutional telemetry counters and catalog CRUD controls | *[ Screenshot: Administrator Console ]* |
-
----
-
 ## 🔮 Future Improvements
 
 The following features represent potential future enhancements for the platform:
